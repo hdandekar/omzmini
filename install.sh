@@ -28,6 +28,22 @@ echo "📥 Downloading omzmini.py..."
 curl -fsSL "https://raw.githubusercontent.com/hdandekar/omzmini/main/omzmini.py" -o "$OMZMINI_PY"
 chmod +x "$OMZMINI_PY"
 
+# ---------------- Scaffold .zshrc ---------------- #
+if [[ ! -f "$ZSHRC" ]]; then
+    echo "🧪 No .zshrc found, creating one from Oh My Zsh template..."
+else
+    if [[ -s "$ZSHRC" ]]; then
+        cp "$ZSHRC" "${ZSHRC}.pre-omzmini"
+        echo "📦 Backed up existing .zshrc to ${ZSHRC}.pre-omzmini"
+    else
+        echo "⚠️ Found empty .zshrc, replacing with template (no backup made)."
+    fi
+    rm -f "$ZSHRC"
+fi
+
+curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/templates/zshrc.zsh-template -o "$ZSHRC"
+echo "✅ New .zshrc scaffolded from template."
+
 # ---------------- Zshrc Alias ---------------- #
 ALIAS_LINE='alias omzmini="python3 ~/.config/omzmini/omzmini.py"'
 if ! grep -Fxq "$ALIAS_LINE" "$ZSHRC"; then
@@ -37,11 +53,6 @@ else
     echo "ℹ️ Alias already exists in $ZSHRC"
 fi
 
-# ---------------- Scaffold .zshrc ---------------- #
-if [[ ! -f "$ZSHRC" ]]; then
-    echo "🧪 Creating minimal .zshrc from template..."
-    curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/templates/zshrc.zsh-template -o "$ZSHRC"
-fi
 
 # ---------------- Initial Update ---------------- #
 echo "🚀 Running initial update (fetch core, plugins, theme)..."
