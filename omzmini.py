@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """
 omzmini.py - Minimal oh-my-zsh bootstrapper in Python
-Supports: --sync, --upgrade, --restore, --doctor, --list, --dry-run, --diff, --pin
+Supports: --update, --upgrade, --restore, --doctor, --list, --dry-run, --diff, --pin
 """
 
-import os
-import sys
 import argparse
-import hashlib
-import shutil
 import datetime
-import urllib.request
 import difflib
+import hashlib
+import os
+import shutil
+import urllib.request
 from pathlib import Path
 
 # ---------------- Paths ---------------- #
@@ -27,6 +26,7 @@ REPO_RAW = "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master"
 os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(OMZMINI_DIR, exist_ok=True)
 
+
 # ---------------- Utilities ---------------- #
 def log(msg, log_enabled=True):
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -36,12 +36,14 @@ def log(msg, log_enabled=True):
         with open(LOGFILE, "a") as f:
             f.write(line + "\n")
 
+
 def sha256(file_path):
     h = hashlib.sha256()
     with open(file_path, "rb") as f:
         while chunk := f.read(8192):
             h.update(chunk)
     return h.hexdigest()
+
 
 def fetch_file(path, dest, dry_run=False, diff=False, pinned=set(), log_enabled=True):
     dest_path = Path(dest).resolve()
@@ -70,8 +72,11 @@ def fetch_file(path, dest, dry_run=False, diff=False, pinned=set(), log_enabled=
                 with open(dest, "r") as f:
                     local_lines = f.read().splitlines()
                 remote_lines = data.decode(errors="ignore").splitlines()
-                diff_lines = list(difflib.unified_diff(local_lines, remote_lines,
-                                                       fromfile=dest, tofile="remote"))
+                diff_lines = list(
+                    difflib.unified_diff(
+                        local_lines, remote_lines, fromfile=dest, tofile="remote"
+                    )
+                )
                 if diff_lines:
                     print("\n".join(diff_lines))
             ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -86,23 +91,27 @@ def fetch_file(path, dest, dry_run=False, diff=False, pinned=set(), log_enabled=
     with open(HASHFILE, "a") as f:
         f.write(f"{path} {sha256(dest)}\n")
 
+
+def list_remote_files(folder):
+    url = f"https://api.github.com/repos/ohmyzsh/ohmyzsh/contents/{folder}"
+    try:
+        resp = urllib.request.urlopen(url).read().decode()
+        items = json.loads(resp)
+        return [i["path"] for i in items if i["type"] == "file"]
+    except Exception as e:
+        log(f"⚠️ Could not list {folder}: {e}")
+        return []
+
+
 # ---------------- Hardcoded core/lib/tools ---------------- #
-CORE_FILES = [
-    "oh-my-zsh.sh"
-]
 
-LIB_FILES = [
-    "lib/completion.zsh",
-    "lib/history.zsh",
-    "lib/key-bindings.zsh",
-    "lib/termcap.zsh",
-]
 
-TOOLS_FILES = [
-    "tools/upgrade.sh",
-    "tools/install.sh",
-    "tools/uninstall.sh",
-]
+CORE_FILES = ["oh-my-zsh.sh"]
+
+LIB_FILES = list_remote_files("lib")
+
+TOOLS_FILES = list_remote_files("tools")
+
 
 # ---------------- Actions ---------------- #
 def parse_zshrc(zshrc_path):
@@ -118,28 +127,67 @@ def parse_zshrc(zshrc_path):
                 theme = line.split('"')[1]
     return plugins, theme
 
-def sync_plugins_and_theme(zshrc, dry_run=False, diff=False, pinned=set(), log_enabled=True):
+
+def update_plugins_and_theme(
+    zshrc, dry_run=False, diff=False, pinned=set(), log_enabled=True
+):
     plugins, theme = parse_zshrc(zshrc)
 
     # Core files
     for f in CORE_FILES:
-        fetch_file(f, os.path.join(OHMYZSH_DIR, f), dry_run=dry_run, diff=diff, pinned=pinned, log_enabled=log_enabled)
+        fetch_file(
+            f,
+            os.path.join(OHMYZSH_DIR, f),
+            dry_run=dry_run,
+            diff=diff,
+            pinned=pinned,
+            log_enabled=log_enabled,
+        )
     # Lib files
     for f in LIB_FILES:
-        fetch_file(f, os.path.join(OHMYZSH_DIR, f), dry_run=dry_run, diff=diff, pinned=pinned, log_enabled=log_enabled)
+        fetch_file(
+            f,
+            os.path.join(OHMYZSH_DIR, f),
+            dry_run=dry_run,
+            diff=diff,
+            pinned=pinned,
+            log_enabled=log_enabled,
+        )
     # Tools files
     for f in TOOLS_FILES:
-        fetch_file(f, os.path.join(OHMYZSH_DIR, f), dry_run=dry_run, diff=diff, pinned=pinned, log_enabled=log_enabled)
+        fetch_file(
+            f,
+            os.path.join(OHMYZSH_DIR, f),
+            dry_run=dry_run,
+            diff=diff,
+            pinned=pinned,
+            log_enabled=log_enabled,
+        )
     # Plugins
     for plugin in plugins:
         plugin_file = f"plugins/{plugin}/{plugin}.plugin.zsh"
-        fetch_file(plugin_file, os.path.join(OHMYZSH_DIR, plugin_file), dry_run=dry_run, diff=diff, pinned=pinned, log_enabled=log_enabled)
+        fetch_file(
+            plugin_file,
+            os.path.join(OHMYZSH_DIR, plugin_file),
+            dry_run=dry_run,
+            diff=diff,
+            pinned=pinned,
+            log_enabled=log_enabled,
+        )
     # Theme
     if theme:
         theme_file = f"themes/{theme}.zsh-theme"
-        fetch_file(theme_file, os.path.join(OHMYZSH_DIR, theme_file), dry_run=dry_run, diff=diff, pinned=pinned, log_enabled=log_enabled)
+        fetch_file(
+            theme_file,
+            os.path.join(OHMYZSH_DIR, theme_file),
+            dry_run=dry_run,
+            diff=diff,
+            pinned=pinned,
+            log_enabled=log_enabled,
+        )
 
-    log("✅ Sync complete", log_enabled)
+    log("✅ Update complete", log_enabled)
+
 
 def run_doctor(zshrc):
     print("🩺 Running omzmini diagnostics...")
@@ -160,6 +208,7 @@ def run_doctor(zshrc):
     if not theme:
         print("⚠️ No theme declared")
 
+
 def run_list(zshrc):
     print("📋 Plugins and theme:")
     plugins, theme = parse_zshrc(zshrc)
@@ -172,6 +221,7 @@ def run_list(zshrc):
     else:
         print("⚠️ No theme declared")
 
+
 def upgrade_self(dry_run=False, pinned=set()):
     omzmini_path = os.path.join(OMZMINI_DIR, "omzmini.py")
     backup = f"{omzmini_path}.bak.{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -183,16 +233,35 @@ def upgrade_self(dry_run=False, pinned=set()):
     os.chmod(omzmini_path, 0o755)
     log(f"✅ omzmini upgraded. Backup: {backup}")
 
+
 # ---------------- Main ---------------- #
 def main():
-    parser = argparse.ArgumentParser(description="omzmini - minimal oh-my-zsh bootstrapper")
-    parser.add_argument("--sync", action="store_true", help="Fetch any missing files to match .zshrc declarations")
-    parser.add_argument("--upgrade", action="store_true", help="Upgrade omzmini script itself")
-    parser.add_argument("--restore", action="store_true", help="Re-fetch missing or corrupted files")
-    parser.add_argument("--doctor", action="store_true", help="Run diagnostics on omzmini setup")
-    parser.add_argument("--list", action="store_true", help="Show status of plugins and theme")
-    parser.add_argument("--dry-run", action="store_true", help="Preview actions without executing")
-    parser.add_argument("--diff", action="store_true", help="Show diff for outdated files")
+    parser = argparse.ArgumentParser(
+        description="omzmini - minimal oh-my-zsh bootstrapper"
+    )
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help="Fetch/Update any missing files to match .zshrc declarations",
+    )
+    parser.add_argument(
+        "--upgrade", action="store_true", help="Upgrade omzmini script itself"
+    )
+    parser.add_argument(
+        "--restore", action="store_true", help="Re-fetch missing or corrupted files"
+    )
+    parser.add_argument(
+        "--doctor", action="store_true", help="Run diagnostics on omzmini setup"
+    )
+    parser.add_argument(
+        "--list", action="store_true", help="Show status of plugins and theme"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview actions without executing"
+    )
+    parser.add_argument(
+        "--diff", action="store_true", help="Show diff for outdated files"
+    )
     parser.add_argument("--pin", nargs="*", help="Pin files to exclude from upgrades")
     args = parser.parse_args()
 
@@ -200,19 +269,24 @@ def main():
     if args.pin:
         pinned.update(Path(p).resolve() for p in args.pin)
     elif Path(PIN_FILE).exists():
-        pinned.update(Path(p.strip()).resolve() for p in Path(PIN_FILE).read_text().splitlines())
+        pinned.update(
+            Path(p.strip()).resolve() for p in Path(PIN_FILE).read_text().splitlines()
+        )
 
     zshrc = os.path.join(HOME, ".zshrc")
     if args.upgrade:
         upgrade_self(dry_run=args.dry_run, pinned=pinned)
-    if args.sync:
-        sync_plugins_and_theme(zshrc, dry_run=args.dry_run, diff=args.diff, pinned=pinned)
+    if args.update:
+        update_plugins_and_theme(
+            zshrc, dry_run=args.dry_run, diff=args.diff, pinned=pinned
+        )
     if args.restore:
-        sync_plugins_and_theme(zshrc, dry_run=False, diff=False, pinned=pinned)
+        update_plugins_and_theme(zshrc, dry_run=False, diff=False, pinned=pinned)
     if args.doctor:
         run_doctor(zshrc)
     if args.list:
         run_list(zshrc)
+
 
 if __name__ == "__main__":
     main()

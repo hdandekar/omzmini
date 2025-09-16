@@ -32,6 +32,9 @@ Minimal, bootstrapper for `oh-my-zsh` that fetchs only core files and pulls plug
 # Restore missing or corrupted files
 ~/.config/omzmini/omzmini.py --restore
 
+# Remove plugins/themes not declared in .zshrc
+~/.config/omzmini/omzmini.py --cleanup
+
 # List current plugin and theme status
 ~/.config/omzmini/omzmini.py --list
 
@@ -49,6 +52,9 @@ Minimal, bootstrapper for `oh-my-zsh` that fetchs only core files and pulls plug
 
 # Pin a file to exclude it from future upgrades
 ~/.config/omzmini/omzmini.py --pin=<path>
+
+# Show aliases
+omzmini.py --alias-help <plugin_name>
 
 ```
 
@@ -71,7 +77,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/hdandekar/omzmini/refs/heads
 * Copies `omzmini.py` into `~/.config/omzmini` and makes it executable
 * Creates `.zshrc` from Oh My Zsh template if missing
 * Adds modular sourcing snippet to `.zshrc` (`~/.config/zsh/zshrc.d/*.zsh`)
-* Runs initial `--sync` to fetch core, plugins, and theme files declared in `.zshrc`
+* Runs initial `--update` to fetch core, plugins, and theme files declared in `.zshrc`
 
 
 ### Manual Install
@@ -99,8 +105,8 @@ fi
 # Reload shell
 source ~/.zshrc
 
-# Run initial sync
-~/.config/omzmini/omzmini.py --sync
+# Run initial update
+~/.config/omzmini/omzmini.py --update
 
 ```
 
@@ -112,7 +118,7 @@ source ~/.zshrc
     * Rollback command: `cp ~/.config/omzmini/omzmini.py.bak.<timestamp> ~/.config/omzmini/omzmini.py`
 
 2. Updating Plugins & Themes
-    * `~/.config/omzmini/omzmini.py --sync`
+    * `~/.config/omzmini/omzmini.py --update`
     * Fetches any missing or outdated plugins/themes based on `.zshrc`
     * Works for core files, Oh My Zsh lib/*, tools/*, and themes/plugins
     * Optional flags:
@@ -129,3 +135,7 @@ source ~/.zshrc
 4. Logging
     * Verifies .zshrc existence, core files, plugins, and themes
     * Reports any missing or outdated items
+5. Cleanup of ununsed plugins/themes
+    * `~/.config/omzmini/omzmini.py --cleanup`
+    * Removes plugins/themes not declared in `.zshrc`
+    * Cleans up stale hash entries for removed plugins/themes

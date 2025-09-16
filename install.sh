@@ -43,6 +43,10 @@ if [[ ! -f "$ZSHRC" ]]; then
     curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/templates/zshrc.zsh-template -o "$ZSHRC"
 fi
 
+# ---------------- Initial Update ---------------- #
+echo "🚀 Running initial update (fetch core, plugins, theme)..."
+python3 "$OMZMINI_PY" --update || true
+
 # ---------------- Completion Suggestion ---------------- #
 echo "ℹ️ You can now use 'omzmini --help' after restarting your shell or running 'source ~/.zshrc'."
 echo "✅ Installation complete."
