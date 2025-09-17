@@ -10,6 +10,7 @@ import difflib
 import hashlib
 import json
 import os
+import re
 import shutil
 import urllib.request
 from pathlib import Path
@@ -235,6 +236,34 @@ def upgrade_self(dry_run=False, pinned=set()):
     log(f"✅ omzmini upgraded. Backup: {backup}")
 
 
+def show_alias_help(plugin, log_enabled=True):
+    plugin_dir = Path(OHMYZSH_DIR) / "plugins" / plugin
+    if not plugin_dir.exists():
+        log(f"❌ Plugin {plugin} not installed at {plugin_dir}", log_enabled)
+        return
+
+    alias_re = re.compile(r"^alias\s+(\w+)=[\"'](.+)[\"']")
+    aliases = []
+
+    # scan all *.zsh files in plugin directory
+    for file in plugin_dir.glob("*.zsh"):
+        try:
+            with open(file) as f:
+                for line in f:
+                    m = alias_re.match(line.strip())
+                    if m:
+                        aliases.append(m.groups())
+        except Exception as e:
+            log(f"⚠️ Could not read {file}: {e}", log_enabled)
+
+    print(f"\n📦 Plugin: {plugin}")
+    if not aliases:
+        print("⚠️ No aliases found")
+        return
+
+    for name, expansion in aliases:
+        print(f"{name:<12} = {expansion}")
+
 # ---------------- Main ---------------- #
 def main():
     parser = argparse.ArgumentParser(
@@ -264,6 +293,12 @@ def main():
         "--diff", action="store_true", help="Show diff for outdated files"
     )
     parser.add_argument("--pin", nargs="*", help="Pin files to exclude from upgrades")
+    parser.add_argument(
+            "--alias-help",
+            nargs="?",
+            const=True,
+            help="Show aliases from a plugin (default: all from .zshrc)"
+        )
     args = parser.parse_args()
 
     pinned = set()
@@ -287,6 +322,11 @@ def main():
         run_doctor(zshrc)
     if args.list:
         run_list(zshrc)
+    if args.alias_help:
+            plugins, _ = parse_zshrc(zshrc)
+            targets = [args.alias_help] if args.alias_help is not True else plugins
+            for plugin in targets:
+                show_alias_help(plugin)
 
 
 if __name__ == "__main__":
